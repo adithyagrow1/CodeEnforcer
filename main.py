@@ -43,6 +43,7 @@ def review_pr(pr_url):
     return final_report
 
 
+
 if __name__ == "__main__":
     url = input("Paste a GitHub PR URL: ")
     report = review_pr(url)
