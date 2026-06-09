@@ -8,6 +8,7 @@ def get_user(username, password):
     user = cursor.fetchone()
     return user
 
+
 def login(user, pwd):
     if user == None:
         return False
