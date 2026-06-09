@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeEnforcer — AI PR Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* 1. LOAD LOCAL FONTS */
+@font-face {
+  font-family: 'Tactic Sans';
+  src: url('/static/TacticSans-Reg.woff2') format('woff2'); /* Ensure this filename exactly matches your file */
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tactic Sans';
+  src: url('/static/TacticSans-Bld.woff2') format('woff2'); /* Ensure this filename exactly matches your file */
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  /* Glassmorphism Color Palette */
+  --surface: rgba(26, 16, 37, 0.5);
+  --surface2: rgba(40, 30, 55, 0.6);
+  --border: rgba(255, 255, 255, 0.15);
+  --border-glow: rgba(255, 126, 103, 0.4);
+
+  --text: #ffffff;
+  --muted: #dcdce6;
+  --muted2: #a5a5b5;
+
+  /* Accents matching the glowing orange sphere */
+  --accent: #FF7E67;
+  --accent2: #FFCBA4;
+
+  --red: #ff6b6b;
+  --yellow: #feca57;
+  --green: #1dd1a1;
+  --red-bg: rgba(255, 107, 107, 0.15);
+  --yellow-bg: rgba(254, 202, 87, 0.15);
+  --green-bg: rgba(29, 209, 161, 0.15);
+}
+
+body {
+  background-image: url('/static/image1.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-color: #0c0c0e; /* Fallback */
+  color: var(--text);
+  font-family: 'Tactic Sans', sans-serif;
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* NAV */
+nav {
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: rgba(15, 10, 25, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 100;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Tactic Sans', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px var(--border-glow);
+}
+.logo-icon svg {width:18px;height:18px;stroke:#1a1025;fill:none;stroke-width:2.5}
+.nav-chip {
+  background: rgba(255, 126, 103, 0.15);
+  border: 1px solid rgba(255, 126, 103, 0.3);
+  color: var(--accent2);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 100px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.nav-right {display:flex;align-items:center;gap:16px}
+.nav-link {color:var(--muted);font-size:13px;font-weight:500;text-decoration:none;transition:color .15s}
+.nav-link:hover {color:var(--text); text-shadow: 0 0 8px rgba(255,255,255,0.4);}
+
+/* HERO */
+.hero {padding:80px 32px 48px;max-width:760px;margin:0 auto;text-align:center}
+.hero-eyebrow {
+  display:inline-flex;align-items:center;gap:8px;
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border:1px solid var(--border);
+  border-radius:100px;
+  padding:8px 16px;
+  font-size:12px;font-weight:500;color:var(--muted);
+  margin-bottom:24px;
+}
+.eyebrow-dot {width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+h1 {
+  font-family: 'Tactic Sans', sans-serif;
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  color: var(--text);
+  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+h1 span {
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(255, 126, 103, 0.4);
+}
+.hero-sub {color:var(--muted);font-size:16px;line-height:1.7;max-width:520px;margin:0 auto 40px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);}
+
+/* INPUT AREA */
+.input-wrap {max-width:720px;margin:0 auto;padding:0 32px}
+.input-box {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 8px 8px 8px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all .3s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.input-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--border-glow);
+}
+.input-icon {color:var(--muted);flex-shrink:0}
+.input-icon svg {width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+input[type=text] {flex:1;background:none;border:none;outline:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:12px 0;min-width:0}
+input[type=text]::placeholder {color:var(--muted2)}
+.btn-review {
+  background: var(--accent);
+  color: #1a1025;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 24px;
+  font-family: 'Tactic Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.02em;
+}
+.btn-review:hover {
+  background: var(--accent2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px var(--border-glow);
+}
+.btn-review:disabled {opacity:.6;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-review svg {width:16px;height:16px;stroke:#1a1025;fill:none;stroke-width:2.5}
+
+/* DIVIDER */
+.divider {max-width:720px;margin:40px auto 0;padding:0 32px;display:flex;align-items:center;gap:16px}
+.divider-line {flex:1;height:1px;background:var(--border)}
+.divider-text {font-size:12px;color:var(--muted);font-weight:500; text-transform: uppercase; letter-spacing: 0.1em;}
+
+/* EXAMPLE BUTTON */
+.example-btn {
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.example-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--surface2);
+}
+
+/* RESULTS */
+.results {max-width:720px;margin:32px auto 64px;padding:0 32px;display:none}
+
+/* STATS ROW */
+.stats {display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.stat {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.stat-num {
+  font-family: 'Tactic Sans', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+.stat-label {font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted2);margin-top:4px}
+
+/* PR HEADER */
+.pr-header {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pr-title-text {font-family:'Tactic Sans', sans-serif; font-size:16px;font-weight:700;color:var(--text)}
+.pr-author {font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+/* ISSUE CARDS */
+.issues-label {font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:12px;padding-left:4px}
+.issue {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  transition: transform .2s, border-color .2s;
+}
+.issue:hover {transform:translateX(4px); border-color: rgba(255,255,255,0.3);}
+.issue.high {background: var(--red-bg); border-color: rgba(255,107,107,0.3);}
+.issue.medium {background: var(--yellow-bg); border-color: rgba(254,202,87,0.3);}
+.issue.low {background: var(--green-bg); border-color: rgba(29,209,161,0.3);}
+.issue-top {display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sev {font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;padding:4px 10px;border-radius:100px}
+.sev.high {background:rgba(255,107,107,0.2);color:var(--red)}
+.sev.medium {background:rgba(254,202,87,0.2);color:var(--yellow)}
+.sev.low {background:rgba(29,209,161,0.2);color:var(--green)}
+.line-ref {font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);background:var(--surface2);padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+.issue-problem {font-size:14px;color:#f0f0f4;line-height:1.6;margin-bottom:12px}
+.issue-fix {display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted2); background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;}
+.fix-tag {color:var(--accent);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;margin-top:2px}
+
+/* NO ISSUES */
+.no-issues {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 64px 32px;
+  text-align: center;
+}
+.no-issues-icon {font-size:40px;margin-bottom:16px; text-shadow: 0 0 20px rgba(29, 209, 161, 0.4);}
+.no-issues-msg {font-family: 'Tactic Sans', sans-serif; font-size:18px;font-weight:700;color:var(--green)}
+.no-issues-sub {font-size:14px;color:var(--muted);margin-top:6px}
+
+/* LOADER */
+.loader {display:none;text-align:center;padding:80px 32px}
+.spinner {width:40px;height:40px;border:3px solid var(--surface2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-msg {font-size:14px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+/* ERROR */
+.error-bar {background:rgba(255,107,107,0.15);backdrop-filter:blur(10px);border:1px solid rgba(255,107,107,0.3);border-radius:12px;padding:16px 20px;color:var(--text);font-size:14px;margin-bottom:20px;display:none}
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  background: rgba(12, 12, 14, 0.6);
+  backdrop-filter: blur(10px);
+}
+.footer-chips {display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.fchip {background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:6px 14px;font-size:12px;color:var(--text);font-weight:500;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    </div>
+    CodeEnforcer
+  </div>
+  <div class="nav-chip">Beta</div>
+  <div class="nav-right">
+    <a href="https://github.com/adithyagrow1/CodeEnforcer" class="nav-link" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">
+    <span class="eyebrow-dot"></span>
+    Running on AMD Instinct MI300X · 192GB VRAM
+  </div>
+  <h1>AI-powered<br><span>code review</span> for every PR</h1>
+  <p class="hero-sub">Paste any public GitHub pull request URL and get an instant review powered by DeepSeek Coder running on AMD MI300X GPU via ROCm.</p>
+</div>
+
+<div class="input-wrap">
+  <div class="input-box">
+    <span class="input-icon">
+      <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+    </span>
+    <input type="text" id="prUrl" placeholder="https://github.com/owner/repo/pull/123" />
+    <button class="btn-review" id="reviewBtn" onclick="runReview()">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Review PR
+    </button>
+  </div>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-text">or try an example</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div style="text-align:center;margin-top:20px">
+    <button class="example-btn" onclick="document.getElementById('prUrl').value='https://github.com/pallets/flask/pull/5650';runReview()">
+      GIT5650
+    </button>
+  </div>
+</div>
+
+<div class="results" id="results">
+  <div class="error-bar" id="errorBar"></div>
+
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <div class="loader-msg">Analyzing on MI300X...</div>
+  </div>
+
+  <div id="reportArea"></div>
+</div>
+
+<footer>
+  Built for lablab.ai AMD Hackathon
+  <div class="footer-chips">
+    <span class="fchip">AMD Instinct MI300X</span>
+    <span class="fchip">ROCm 7.2</span>
+    <span class="fchip">DeepSeek Coder 6.7B</span>
+    <span class="fchip">vLLM 0.17.1</span>
+  </div>
+</footer>
+
+<script>
+async function runReview() {
+  const url = document.getElementById('prUrl').value.trim();
+  if (!url) return;
+  const btn = document.getElementById('reviewBtn');
+  const loader = document.getElementById('loader');
+  const results = document.getElementById('results');
+  const reportArea = document.getElementById('reportArea');
+  const errorBar = document.getElementById('errorBar');
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+  errorBar.style.display = 'none';
+  reportArea.innerHTML = '';
+  results.style.display = 'block';
+  loader.style.display = 'block';
+  results.scrollIntoView({behavior:'smooth', block:'start'});
+
+  try {
+    const res = await fetch('/review', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url})
+    });
+    const data = await res.json();
+    loader.style.display = 'none';
+
+    if (!data.success) {
+      errorBar.textContent = 'Error: ' + data.error;
+      errorBar.style.display = 'block';
+      btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Review PR';
+      return;
+    }
+
+    const r = data.report;
+    let html = `
+      <div class="stats">
+        <div class="stat"><div class="stat-num">${r.total_issues}</div><div class="stat-label">Issues found</div></div>
+        <div class="stat"><div class="stat-num">${r.files_changed}</div><div class="stat-label">Files changed</div></div>
+        <div class="stat"><div class="stat-num">${r.chunk_summaries.length}</div><div class="stat-label">Chunks reviewed</div></div>
+      </div>
+      <div class="pr-header">
+        <div class="pr-title-text">${r.pr_title}</div>
+        <div class="pr-author">by ${r.author}</div>
+      </div>
+    `;
+
+    if (r.issues.length === 0) {
+      html += `<div class="no-issues"><div class="no-issues-icon">✅</div><div class="no-issues-msg">No issues found</div><div class="no-issues-sub">This PR looks clean.</div></div>`;
+    } else {
+      html += `<div class="issues-label">${r.issues.length} issue${r.issues.length>1?'s':''} detected</div>`;
+      r.issues.forEach(issue => {
+        const s = (issue.severity||'low').toLowerCase();
+        html += `
+          <div class="issue ${s}">
+            <div class="issue-top">
+              <span class="sev ${s}">${s}</span>
+              <span class="line-ref">${issue.line_reference||'N/A'}</span>
+            </div>
+            <div class="issue-problem">${issue.issue}</div>
+            <div class="issue-fix"><span class="fix-tag">Fix</span><span>${issue.suggestion}</span></div>
+          </div>`;
+      });
+    }
+
+    reportArea.innerHTML = html;
+  } catch(e) {
+    loader.style.display = 'none';
+    errorBar.textContent = 'Could not connect: ' + e.message;
+    errorBar.style.display = 'block';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#1a1025;fill:none;stroke-width:2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Review PR';
+}
+
+document.getElementById('prUrl').addEventListener('keydown', e => { if(e.key==='Enter') runReview(); });
+</script>
+</body>
+</html>
