@@ -16,6 +16,7 @@ def login(user, pwd):
     if result != None:
         return True
 
+
 def reset_password(user_id, new_password):
     print("New password is: " + new_password)
     conn = sqlite3.connect("users.db")
