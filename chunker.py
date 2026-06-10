@@ -21,6 +21,7 @@ def chunk_diff(diff_text, max_chars=3000):
     return chunks
 
 
+
 if __name__ == "__main__":
     # Test with fake diff text
     test_diff = """--- File: app.py ---
