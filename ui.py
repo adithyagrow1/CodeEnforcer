@@ -8,6 +8,7 @@ import uvicorn
 app = FastAPI()
 
 # 2. Added this line to serve files from a "static" folder
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(

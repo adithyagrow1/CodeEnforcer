@@ -3,8 +3,10 @@ import json
 
 # This will point to your GPU instance later
 # For now it points to localhost for testing
+
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "deepseek-coder:6.7b"
+
 
 
 def review_chunk(chunk, chunk_index):

@@ -362,7 +362,7 @@ footer {
 
   <div style="text-align:center;margin-top:20px">
     <button class="example-btn" onclick="document.getElementById('prUrl').value='https://github.com/pallets/flask/pull/5650';runReview()">
-      GIT5650
+      https://github.com/pallets/flask/pull/5650
     </button>
   </div>
 </div>
@@ -436,7 +436,7 @@ async function runReview() {
     `;
 
     if (r.issues.length === 0) {
-      html += `<div class="no-issues"><div class="no-issues-icon">✅</div><div class="no-issues-msg">No issues found</div><div class="no-issues-sub">This PR looks clean.</div></div>`;
+      html += `<div class="no-issues"><div class="no-issues-icon"></div><div class="no-issues-msg">No issues found</div><div class="no-issues-sub">This PR looks clean.</div></div>`;
     } else {
       html += `<div class="issues-label">${r.issues.length} issue${r.issues.length>1?'s':''} detected</div>`;
       r.issues.forEach(issue => {
