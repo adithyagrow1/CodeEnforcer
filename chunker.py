@@ -2,6 +2,7 @@ def chunk_diff(diff_text, max_chars=3000):
     chunks = []
     current_chunk = ""
 
+    
     lines = diff_text.split("\n")
 
     for line in lines:
