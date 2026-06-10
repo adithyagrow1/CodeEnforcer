@@ -69,5 +69,6 @@ with gr.Blocks(title="CodeEnforcer") as demo:
         inputs=pr_input
     )
 
+
 if __name__ == "__main__":
     demo.launch()
