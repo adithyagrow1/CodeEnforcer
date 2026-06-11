@@ -7,6 +7,7 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "deepseek-coder:6.7b"
 
 
+
 def review_chunk(chunk, chunk_index):
     prompt = f"""You are an expert code reviewer. Analyze the following code diff and identify issues.
 
