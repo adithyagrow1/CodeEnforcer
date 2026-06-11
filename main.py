@@ -4,12 +4,7 @@ from reviewer import review_chunk
 import json
 
 
-<<<<<<< Updated upstream
-=======
-#io
 
-
->>>>>>> Stashed changes
 def review_pr(pr_url):
     print(f"\nFetching PR: {pr_url}")
     pr_data = get_pr_diff(pr_url)
