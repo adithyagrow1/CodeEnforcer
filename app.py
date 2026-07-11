@@ -44,6 +44,7 @@ def run_review(pr_url):
         return f"Error: {str(e)}\n\nMake sure the PR URL is public and valid."
 
 
+
 with gr.Blocks(title="CodeEnforcer") as demo:
     gr.Markdown("# CodeEnforcer\nAI-powered GitHub PR reviewer running on AMD MI300X GPU")
 
@@ -67,6 +68,7 @@ with gr.Blocks(title="CodeEnforcer") as demo:
         examples=["https://github.com/pallets/flask/pull/5650"],
         inputs=pr_input
     )
+
 
 if __name__ == "__main__":
     demo.launch()

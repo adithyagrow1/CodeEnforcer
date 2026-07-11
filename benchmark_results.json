@@ -1,0 +1,8 @@
+{
+  "model": "deepseek-ai/deepseek-coder-1.3b-instruct",
+  "hardware": "AMD Instinct MI300X",
+  "vram": "192GB",
+  "rocm_version": "7.2",
+  "average_inference_time_seconds": 2.2,
+  "use_case": "GitHub PR code review"
+}

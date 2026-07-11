@@ -8,6 +8,7 @@ import uvicorn
 app = FastAPI()
 
 # 2. Added this line to serve files from a "static" folder
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(
@@ -36,4 +37,4 @@ async def home():
     return HTML
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8001)
+    uvicorn.run(app, host="127.0.0.1", port=8002)

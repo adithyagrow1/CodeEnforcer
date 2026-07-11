@@ -1,79 +1,41 @@
 import requests
 import json
+import time
 
-# This will point to your GPU instance later
-# For now it points to localhost for testing
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "deepseek-coder:6.7b"
-
+VLLM_URL = "http://localhost:8080/v1/completions"
+MODEL_NAME = "deepseek-ai/deepseek-coder-1.3b-instruct"
 
 
 def review_chunk(chunk, chunk_index):
     prompt = f"""You are an expert code reviewer. Analyze the following code diff and identify issues.
 
-For each issue found, respond in this exact JSON format:
-{{
-  "issues": [
-    {{
-      "severity": "high/medium/low",
-      "line_reference": "approximate line or file",
-      "issue": "description of the problem",
-      "suggestion": "how to fix it"
-    }}
-  ],
-  "summary": "one sentence summary of this chunk"
-}}
+Respond only with valid JSON in this exact format:
+{{"issues": [{{"severity": "high/medium/low", "line_reference": "filename or line", "issue": "description", "suggestion": "how to fix it"}}], "summary": "one sentence summary"}}
 
-If no issues found, return {{"issues": [], "summary": "No issues found in this chunk."}}
+If no issues found, return {{"issues": [], "summary": "No issues found."}}
 
-Code diff to review:
+Code diff:
 {chunk}
 
-Respond only with valid JSON, nothing else."""
+JSON response:"""
 
+    start_time = time.time()
     try:
-        response = requests.post(OLLAMA_URL, json={
+        response = requests.post(VLLM_URL, json={
             "model": MODEL_NAME,
             "prompt": prompt,
-            "stream": False
+            "max_tokens": 500,
+            "temperature": 0.1
         }, timeout=60)
-
+        elapsed = time.time() - start_time
+        print(f"  [Chunk {chunk_index}] Inference time: {elapsed:.2f}s")
         result = response.json()
-        raw_text = result.get("response", "")
-
-        # Parse the JSON response from LLM
-        parsed = json.loads(raw_text)
-        return parsed
-
-    except requests.exceptions.ConnectionError:
-        # GPU instance not running yet — return placeholder
-        print(f"  [Chunk {chunk_index}] GPU instance not connected yet, using placeholder")
-        return {
-            "issues": [
-                {
-                    "severity": "medium",
-                    "line_reference": "placeholder",
-                    "issue": "GPU instance not connected — this will be real output once MI300X is running",
-                    "suggestion": "Connect to AMD Developer Cloud instance"
-                }
-            ],
-            "summary": "Placeholder review — GPU instance not connected yet."
-        }
-    except json.JSONDecodeError:
-        return {
-            "issues": [],
-            "summary": f"Could not parse LLM response for chunk {chunk_index}"
-        }
-
-
-if __name__ == "__main__":
-    test_chunk = """--- File: auth.py ---
-+def authenticate(user, password):
--def authenticate(user, pwd):
-     if user == None:
-         return False
-+    query = f"SELECT * FROM users WHERE username = {user}"
-"""
-    print("Testing reviewer...")
-    result = review_chunk(test_chunk, 1)
-    print(json.dumps(result, indent=2))
+        raw_text = result["choices"][0]["text"].strip()
+        start = raw_text.find("{")
+        end = raw_text.rfind("}") + 1
+        if start != -1 and end > start:
+            parsed = json.loads(raw_text[start:end])
+            return parsed
+        return {"issues": [], "summary": raw_text[:200]}
+    except Exception as e:
+        return {"issues": [], "summary": f"Error: {str(e)}"}
