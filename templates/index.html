@@ -1,470 +1,560 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CodeEnforcer — AI PR Review</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-/* 1. LOAD LOCAL FONTS */
-@font-face {
-  font-family: 'Tactic Sans';
-  src: url('/static/TacticSans-Reg.woff2') format('woff2'); /* Ensure this filename exactly matches your file */
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeEnforcer — AI PR Review</title>
+  
+  <!-- Preconnect & Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            tactic: ["'Tactic Sans'", "sans-serif"],
+            mono: ["'JetBrains Mono'", "monospace"],
+          }
+        }
+      }
+    }
+  </script>
 
-@font-face {
-  font-family: 'Tactic Sans';
-  src: url('/static/TacticSans-Bld.woff2') format('woff2'); /* Ensure this filename exactly matches your file */
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+  <!-- React & Babel CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  /* Glassmorphism Color Palette */
-  --surface: rgba(26, 16, 37, 0.5);
-  --surface2: rgba(40, 30, 55, 0.6);
-  --border: rgba(255, 255, 255, 0.15);
-  --border-glow: rgba(255, 126, 103, 0.4);
+  <style>
+    /* Load Tactic Sans Fonts locally */
+    @font-face {
+      font-family: 'Tactic Sans';
+      src: url('/static/TacticSans-Reg.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Tactic Sans';
+      src: url('/static/TacticSans-Bld.woff2') format('woff2');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
 
-  --text: #ffffff;
-  --muted: #dcdce6;
-  --muted2: #a5a5b5;
+    body {
+      background: linear-gradient(to bottom, #ffffff 60%, #e8f5e9 100%);
+      background-attachment: fixed;
+      color: #000000;
+      min-height: 100vh;
+    }
 
-  /* Accents matching the glowing orange sphere */
-  --accent: #FF7E67;
-  --accent2: #FFCBA4;
+    /* Staggered Load Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
 
-  --red: #ff6b6b;
-  --yellow: #feca57;
-  --green: #1dd1a1;
-  --red-bg: rgba(255, 107, 107, 0.15);
-  --yellow-bg: rgba(254, 202, 87, 0.15);
-  --green-bg: rgba(29, 209, 161, 0.15);
-}
+    /* Staggered Slide In for Results */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(32px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide-up {
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+    }
 
-body {
-  background-image: url('/static/image1.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  background-color: #0c0c0e; /* Fallback */
-  color: var(--text);
-  font-family: 'Tactic Sans', sans-serif;
-  min-height: 100vh;
-  font-size: 15px;
-  line-height: 1.6;
-}
+    /* Badge Pulse Animation */
+    @keyframes pulseOnce {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .animate-pulse-badge {
+      animation: pulseOnce 0.6s ease-out 1;
+    }
 
-/* NAV */
-nav {
-  border-bottom: 1px solid var(--border);
-  padding: 0 32px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  background: rgba(15, 10, 25, 0.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  z-index: 100;
-}
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-family: 'Tactic Sans', sans-serif;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: -0.02em;
-  text-shadow: 0 0 10px rgba(255,255,255,0.2);
-}
-.logo-icon {
-  width: 32px;
-  height: 32px;
-  background: var(--accent);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 15px var(--border-glow);
-}
-.logo-icon svg {width:18px;height:18px;stroke:#1a1025;fill:none;stroke-width:2.5}
-.nav-chip {
-  background: rgba(255, 126, 103, 0.15);
-  border: 1px solid rgba(255, 126, 103, 0.3);
-  color: var(--accent2);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 100px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.nav-right {display:flex;align-items:center;gap:16px}
-.nav-link {color:var(--muted);font-size:13px;font-weight:500;text-decoration:none;transition:color .15s}
-.nav-link:hover {color:var(--text); text-shadow: 0 0 8px rgba(255,255,255,0.4);}
-
-/* HERO */
-.hero {padding:80px 32px 48px;max-width:760px;margin:0 auto;text-align:center}
-.hero-eyebrow {
-  display:inline-flex;align-items:center;gap:8px;
-  background: var(--surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border:1px solid var(--border);
-  border-radius:100px;
-  padding:8px 16px;
-  font-size:12px;font-weight:500;color:var(--muted);
-  margin-bottom:24px;
-}
-.eyebrow-dot {width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
-h1 {
-  font-family: 'Tactic Sans', sans-serif;
-  font-size: 56px;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
-  margin-bottom: 20px;
-  color: var(--text);
-  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
-}
-h1 span {
-  color: var(--accent);
-  text-shadow: 0 0 20px rgba(255, 126, 103, 0.4);
-}
-.hero-sub {color:var(--muted);font-size:16px;line-height:1.7;max-width:520px;margin:0 auto 40px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);}
-
-/* INPUT AREA */
-.input-wrap {max-width:720px;margin:0 auto;padding:0 32px}
-.input-box {
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 8px 8px 8px 24px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: all .3s ease;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-}
-.input-box:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 20px var(--border-glow);
-}
-.input-icon {color:var(--muted);flex-shrink:0}
-.input-icon svg {width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
-input[type=text] {flex:1;background:none;border:none;outline:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:12px 0;min-width:0}
-input[type=text]::placeholder {color:var(--muted2)}
-.btn-review {
-  background: var(--accent);
-  color: #1a1025;
-  border: none;
-  border-radius: 12px;
-  padding: 14px 24px;
-  font-family: 'Tactic Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all .2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: 0.02em;
-}
-.btn-review:hover {
-  background: var(--accent2);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px var(--border-glow);
-}
-.btn-review:disabled {opacity:.6;cursor:not-allowed;transform:none;box-shadow:none;}
-.btn-review svg {width:16px;height:16px;stroke:#1a1025;fill:none;stroke-width:2.5}
-
-/* DIVIDER */
-.divider {max-width:720px;margin:40px auto 0;padding:0 32px;display:flex;align-items:center;gap:16px}
-.divider-line {flex:1;height:1px;background:var(--border)}
-.divider-text {font-size:12px;color:var(--muted);font-weight:500; text-transform: uppercase; letter-spacing: 0.1em;}
-
-/* EXAMPLE BUTTON */
-.example-btn {
-  background: var(--surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 20px;
-  color: var(--muted);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all .2s;
-}
-.example-btn:hover {
-  border-color: var(--accent);
-  color: var(--text);
-  background: var(--surface2);
-}
-
-/* RESULTS */
-.results {max-width:720px;margin:32px auto 64px;padding:0 32px;display:none}
-
-/* STATS ROW */
-.stats {display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
-.stat {
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px 24px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-}
-.stat-num {
-  font-family: 'Tactic Sans', sans-serif;
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  text-shadow: 0 0 10px rgba(255,255,255,0.2);
-}
-.stat-label {font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted2);margin-top:4px}
-
-/* PR HEADER */
-.pr-header {
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px 24px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.pr-title-text {font-family:'Tactic Sans', sans-serif; font-size:16px;font-weight:700;color:var(--text)}
-.pr-author {font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace}
-
-/* ISSUE CARDS */
-.issues-label {font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:12px;padding-left:4px}
-.issue {
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 12px;
-  border: 1px solid var(--border);
-  transition: transform .2s, border-color .2s;
-}
-.issue:hover {transform:translateX(4px); border-color: rgba(255,255,255,0.3);}
-.issue.high {background: var(--red-bg); border-color: rgba(255,107,107,0.3);}
-.issue.medium {background: var(--yellow-bg); border-color: rgba(254,202,87,0.3);}
-.issue.low {background: var(--green-bg); border-color: rgba(29,209,161,0.3);}
-.issue-top {display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.sev {font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;padding:4px 10px;border-radius:100px}
-.sev.high {background:rgba(255,107,107,0.2);color:var(--red)}
-.sev.medium {background:rgba(254,202,87,0.2);color:var(--yellow)}
-.sev.low {background:rgba(29,209,161,0.2);color:var(--green)}
-.line-ref {font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);background:var(--surface2);padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
-.issue-problem {font-size:14px;color:#f0f0f4;line-height:1.6;margin-bottom:12px}
-.issue-fix {display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted2); background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;}
-.fix-tag {color:var(--accent);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;margin-top:2px}
-
-/* NO ISSUES */
-.no-issues {
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 64px 32px;
-  text-align: center;
-}
-.no-issues-icon {font-size:40px;margin-bottom:16px; text-shadow: 0 0 20px rgba(29, 209, 161, 0.4);}
-.no-issues-msg {font-family: 'Tactic Sans', sans-serif; font-size:18px;font-weight:700;color:var(--green)}
-.no-issues-sub {font-size:14px;color:var(--muted);margin-top:6px}
-
-/* LOADER */
-.loader {display:none;text-align:center;padding:80px 32px}
-.spinner {width:40px;height:40px;border:3px solid var(--surface2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;margin:0 auto 20px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loader-msg {font-size:14px;color:var(--muted);font-family:'JetBrains Mono',monospace}
-
-/* ERROR */
-.error-bar {background:rgba(255,107,107,0.15);backdrop-filter:blur(10px);border:1px solid rgba(255,107,107,0.3);border-radius:12px;padding:16px 20px;color:var(--text);font-size:14px;margin-bottom:20px;display:none}
-
-/* FOOTER */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 32px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 13px;
-  background: rgba(12, 12, 14, 0.6);
-  backdrop-filter: blur(10px);
-}
-.footer-chips {display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap}
-.fchip {background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:6px 14px;font-size:12px;color:var(--text);font-weight:500;}
-</style>
+    /* Scanning Line Radar Sweep */
+    @keyframes sweep {
+      0% { top: 0%; }
+      50% { top: 100%; }
+      100% { top: 0%; }
+    }
+    .scanning-line {
+      animation: sweep 2.5s ease-in-out infinite;
+    }
+  </style>
 </head>
-<body>
+<body class="font-sans antialiased text-black">
 
-<nav>
-  <div class="nav-logo">
-    <div class="logo-icon">
-      <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-    </div>
-    CodeEnforcer
-  </div>
-  <div class="nav-chip">Beta</div>
-  <div class="nav-right">
-    <a href="https://github.com/adithyagrow1/CodeEnforcer" class="nav-link" target="_blank">GitHub</a>
-  </div>
-</nav>
+  <div id="root"></div>
 
-<div class="hero">
-  <div class="hero-eyebrow">
-    <span class="eyebrow-dot"></span>
-    Running on AMD Instinct MI300X · 192GB VRAM
-  </div>
-  <h1>AI-powered<br><span>code review</span> for every PR</h1>
-  <p class="hero-sub">Paste any public GitHub pull request URL and get an instant review powered by DeepSeek Coder running on AMD MI300X GPU via ROCm.</p>
-</div>
+  <!-- React Application -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
 
-<div class="input-wrap">
-  <div class="input-box">
-    <span class="input-icon">
-      <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-    </span>
-    <input type="text" id="prUrl" placeholder="https://github.com/owner/repo/pull/123" />
-    <button class="btn-review" id="reviewBtn" onclick="runReview()">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      Review PR
-    </button>
-  </div>
+    // Count Up component for stats numbers
+    function CountUpNumber({ value }) {
+      const [displayVal, setDisplayVal] = useState(0);
 
-  <div class="divider">
-    <div class="divider-line"></div>
-    <div class="divider-text">or try an example</div>
-    <div class="divider-line"></div>
-  </div>
+      useEffect(() => {
+        const end = parseInt(value, 10);
+        if (isNaN(end) || end <= 0) {
+          setDisplayVal(value);
+          return;
+        }
+        let startTime = null;
+        const duration = 1000; // 1 second animate
 
-  <div style="text-align:center;margin-top:20px">
-    <button class="example-btn" onclick="document.getElementById('prUrl').value='https://github.com/pallets/flask/pull/5650';runReview()">
-      https://github.com/pallets/flask/pull/5650
-    </button>
-  </div>
-</div>
+        const animate = (timestamp) => {
+          if (!startTime) startTime = timestamp;
+          const progress = timestamp - startTime;
+          const current = Math.min(Math.floor((progress / duration) * end), end);
+          setDisplayVal(current);
+          if (progress < duration) {
+            window.requestAnimationFrame(animate);
+          }
+        };
 
-<div class="results" id="results">
-  <div class="error-bar" id="errorBar"></div>
+        window.requestAnimationFrame(animate);
+      }, [value]);
 
-  <div class="loader" id="loader">
-    <div class="spinner"></div>
-    <div class="loader-msg">Analyzing on MI300X...</div>
-  </div>
-
-  <div id="reportArea"></div>
-</div>
-
-<footer>
-  Built for lablab.ai AMD Hackathon
-  <div class="footer-chips">
-    <span class="fchip">AMD Instinct MI300X</span>
-    <span class="fchip">ROCm 7.2</span>
-    <span class="fchip">DeepSeek Coder 6.7B</span>
-    <span class="fchip">vLLM 0.17.1</span>
-  </div>
-</footer>
-
-<script>
-async function runReview() {
-  const url = document.getElementById('prUrl').value.trim();
-  if (!url) return;
-  const btn = document.getElementById('reviewBtn');
-  const loader = document.getElementById('loader');
-  const results = document.getElementById('results');
-  const reportArea = document.getElementById('reportArea');
-  const errorBar = document.getElementById('errorBar');
-
-  btn.disabled = true;
-  btn.textContent = 'Analyzing...';
-  errorBar.style.display = 'none';
-  reportArea.innerHTML = '';
-  results.style.display = 'block';
-  loader.style.display = 'block';
-  results.scrollIntoView({behavior:'smooth', block:'start'});
-
-  try {
-    const res = await fetch('/instances/hf-973-29c959e6/proxy/8002/review', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({url})
-    });
-    const data = await res.json();
-    loader.style.display = 'none';
-
-    if (!data.success) {
-      errorBar.textContent = 'Error: ' + data.error;
-      errorBar.style.display = 'block';
-      btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Review PR';
-      return;
+      return <span className="font-tactic text-4xl md:text-5xl font-black">{displayVal}</span>;
     }
 
-    const r = data.report;
-    let html = `
-      <div class="stats">
-        <div class="stat"><div class="stat-num">${r.total_issues}</div><div class="stat-label">Issues found</div></div>
-        <div class="stat"><div class="stat-num">${r.files_changed}</div><div class="stat-label">Files changed</div></div>
-        <div class="stat"><div class="stat-num">${r.chunk_summaries.length}</div><div class="stat-label">Chunks reviewed</div></div>
-      </div>
-      <div class="pr-header">
-        <div class="pr-title-text">${r.pr_title}</div>
-        <div class="pr-author">by ${r.author}</div>
-      </div>
-    `;
+    function App() {
+      const [prUrl, setPrUrl] = useState('');
+      const [loading, setLoading] = useState(false);
+      const [report, setReport] = useState(null);
+      const [error, setError] = useState(null);
+      const [isFocused, setIsFocused] = useState(false);
 
-    if (r.issues.length === 0) {
-      html += `<div class="no-issues"><div class="no-issues-icon"></div><div class="no-issues-msg">No issues found</div><div class="no-issues-sub">This PR looks clean.</div></div>`;
-    } else {
-      html += `<div class="issues-label">${r.issues.length} issue${r.issues.length>1?'s':''} detected</div>`;
-      r.issues.forEach(issue => {
-        const s = (issue.severity||'low').toLowerCase();
-        html += `
-          <div class="issue ${s}">
-            <div class="issue-top">
-              <span class="sev ${s}">${s}</span>
-              <span class="line-ref">${issue.line_reference||'N/A'}</span>
+      const resultsRef = useRef(null);
+
+      // Auto-scroll to results area when loaded
+      useEffect(() => {
+        if ((report || error || loading) && resultsRef.current) {
+          resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, [report, error, loading]);
+
+      const handleRunReview = async (forcedUrl) => {
+        const urlToReview = (typeof forcedUrl === 'string' ? forcedUrl : prUrl).trim();
+        if (!urlToReview) return;
+
+        setLoading(true);
+        setError(null);
+        setReport(null);
+
+        // Check if client-side mock is requested
+        if (urlToReview.toLowerCase().includes('mock')) {
+          await new Promise(resolve => setTimeout(resolve, 1500)); // Show scanning sweep animation
+          setReport({
+            pr_title: "Refactor Authentication Flow and Fix SQL Injection",
+            author: "adithyagrow1",
+            files_changed: 4,
+            total_issues: 3,
+            issues: [
+              {
+                severity: "high",
+                line_reference: "auth.py:L24",
+                issue: "SQL Injection vulnerability detected. User input is interpolated directly into database queries.",
+                suggestion: "Use parameterized queries with prepared statements. e.g., cursor.execute('SELECT * FROM users WHERE username = %s', (username,))"
+              },
+              {
+                severity: "medium",
+                line_reference: "fetcher.py:L15",
+                issue: "Sensitive API key printed in console logs during exception handling.",
+                suggestion: "Sanitize the exception message or log variables by removing Github token values before outputting."
+              },
+              {
+                severity: "low",
+                line_reference: "reviewer.py:L40",
+                issue: "Hardcoded timeout value of 60 seconds. A slow network connection might drop reviews.",
+                suggestion: "Move the timeout duration to a configuration file or environmental variable (e.g. TIMEOUT_SECS)."
+              }
+            ],
+            chunk_summaries: [
+              "Refactored user token verification flow and added bcrypt hashing support.",
+              "Integrated PyGithub client exception interceptor to prevent API token leakage.",
+              "Added vLLM inference connection retries with custom endpoint URL."
+            ]
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Dynamically resolve endpoint path based on proxy/local environment
+        let endpoint = '/review';
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          endpoint = '/review';
+        } else {
+          const match = window.location.pathname.match(/\/instances\/[^\/]+\/proxy\/\d+/);
+          if (match) {
+            endpoint = `${match[0]}/review`;
+          } else {
+            endpoint = '/instances/hf-973-29c959e6/proxy/8002/review';
+          }
+        }
+
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: urlToReview })
+          });
+          const data = await res.json();
+          setLoading(false);
+
+          if (!data.success) {
+            setError(data.error || 'Unknown error occurred during review.');
+            return;
+          }
+
+          setReport(data.report);
+        } catch (e) {
+          setLoading(false);
+          setError(`Could not connect: ${e.message}`);
+        }
+      };
+
+      return (
+        <div className="max-w-5xl mx-auto px-4 md:px-8 py-6 flex flex-col min-h-screen">
+          
+          {/* Header Bar */}
+          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-6 border-b border-black border-opacity-10 animate-fade-in select-none">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-black flex items-center justify-center rounded">
+                <svg className="w-5 h-5 stroke-white fill-none stroke-[2.5]" viewBox="0 0 24 24">
+                  <polyline points="16 18 22 12 16 6"/>
+                  <polyline points="8 6 2 12 8 18"/>
+                </svg>
+              </div>
+              <span className="font-tactic text-xl font-bold tracking-tight text-black">CODEENFORCER</span>
             </div>
-            <div class="issue-problem">${issue.issue}</div>
-            <div class="issue-fix"><span class="fix-tag">Fix</span><span>${issue.suggestion}</span></div>
-          </div>`;
-      });
+            
+            {/* Tech Stack Chips */}
+            <div className="flex flex-wrap gap-2">
+              {['AMD Instinct MI300X', 'DeepSeek Coder 1.3B', 'vLLM', 'ROCm 7.2'].map((tech) => (
+                <span key={tech} className="bg-[#86efac] text-black text-[10px] font-bold tracking-wider px-3 py-1 rounded-full uppercase border border-black border-opacity-10 shadow-sm">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          </header>
+
+          {/* Hero Section */}
+          <section className="mt-16 md:mt-24 mb-10 text-center animate-fade-in [animation-delay:100ms] flex flex-col items-center justify-center">
+            <h1 className="font-tactic text-5xl md:text-8xl font-black text-black tracking-tighter leading-none select-none text-center">
+              CODE ENFORCER
+            </h1>
+            
+            <div className="flex items-center gap-4 mt-3 w-full max-w-3xl justify-center">
+              <div className="flex-grow h-[1px] bg-black"></div>
+              <span className="text-sm md:text-base font-bold tracking-[0.3em] text-black select-none whitespace-nowrap">AI-POWERED</span>
+              <div className="flex-grow h-[1px] bg-black"></div>
+            </div>
+
+            <div className="flex flex-wrap gap-3 mt-6 justify-center">
+              <span className="bg-black text-white hover:bg-neutral-800 px-5 py-2.5 rounded-full text-[11px] md:text-xs font-semibold tracking-wide uppercase select-none cursor-pointer transition-transform hover:scale-105 duration-200 shadow-md">
+                AI-Powered GitHub PR Review Agent
+              </span>
+              <span className="bg-black text-white hover:bg-neutral-800 px-5 py-2.5 rounded-full text-[11px] md:text-xs font-semibold tracking-wide uppercase select-none cursor-pointer transition-transform hover:scale-105 duration-200 shadow-md">
+                lablab.ai AMD Hackathon
+              </span>
+            </div>
+          </section>
+
+          {/* Main Technical Frame Container */}
+          <main className="relative border border-black bg-white p-6 md:p-10 my-8 animate-fade-in [animation-delay:200ms] shadow-lg">
+            
+            {/* Radar Sweep Scanning Line */}
+            {loading && (
+              <div className="absolute left-0 w-full h-[2px] bg-[#86efac] shadow-[0_0_8px_#86efac] scanning-line pointer-events-none z-50"></div>
+            )}
+
+            {/* Geometric Corner Frames */}
+            <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-black border border-black"></div>
+            <div className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-black border border-black"></div>
+            <div className="absolute bottom-0 left-0 -translate-x-1/2 translate-y-1/2 w-3.5 h-3.5 bg-black border border-black"></div>
+            <div className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 w-3.5 h-3.5 bg-black border border-black"></div>
+
+            {/* Input Form Section */}
+            <div className="space-y-6">
+              <div className={`flex flex-col md:flex-row items-stretch md:items-center gap-3 border p-2 rounded-lg bg-neutral-50 ${isFocused ? 'border-black ring-1 ring-black' : 'border-neutral-300'} transition-all duration-300`}>
+                <div className="flex items-center gap-3 px-3 flex-grow">
+                  <svg className="w-5 h-5 text-neutral-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+                  </svg>
+                  <input 
+                    type="text" 
+                    value={prUrl}
+                    onChange={(e) => setPrUrl(e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    placeholder="https://github.com/owner/repo/pull/123"
+                    className="w-full bg-transparent border-none outline-none text-black font-mono text-sm py-2"
+                  />
+                </div>
+                <button 
+                  onClick={() => handleRunReview()}
+                  disabled={loading}
+                  className="bg-black hover:bg-neutral-800 text-white font-bold py-3 px-6 rounded-full flex items-center justify-center gap-2 transition-transform hover:scale-105 duration-200 disabled:opacity-50 disabled:cursor-not-allowed select-none"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Analyzing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 text-white stroke-current fill-none stroke-[2.5]" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                      <span>Review PR</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Example Trigger Row */}
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-3 w-full max-w-xl my-2">
+                  <div className="flex-grow h-[1px] bg-neutral-200"></div>
+                  <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold select-none">choose a loading mechanism</span>
+                  <div className="flex-grow h-[1px] bg-neutral-200"></div>
+                </div>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <button 
+                    onClick={() => {
+                      setPrUrl('https://github.com/pallets/flask/pull/5650');
+                      handleRunReview('https://github.com/pallets/flask/pull/5650');
+                    }}
+                    className="border border-black bg-neutral-50 hover:bg-neutral-100 text-black px-4 py-2 text-xs font-mono transition-all hover:translate-y-[-2px] shadow-sm"
+                  >
+                    {"\uD83D\uDE80 Real Run (Pallets Flask)"}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setPrUrl('mock-review-demo');
+                      handleRunReview('mock-review-demo');
+                    }}
+                    className="border border-black bg-[#86efac] bg-opacity-25 hover:bg-opacity-40 text-black px-4 py-2 text-xs font-mono transition-all hover:translate-y-[-2px] shadow-sm font-bold"
+                  >
+                    {"\u2728 Visual Demo (Mock Review)"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Results Display Area */}
+            <div ref={resultsRef} className="mt-8">
+              {/* Loader Panel */}
+              {loading && (
+                <div className="py-16 text-center animate-fade-in">
+                  <div className="inline-block w-8 h-8 border-4 border-neutral-200 border-t-black rounded-full animate-spin mb-4"></div>
+                  <div className="font-mono text-xs text-black tracking-wider uppercase">Analyzing on MI300X...</div>
+                </div>
+              )}
+
+              {/* Error Box */}
+              {error && (
+                <div className="border border-red-500 bg-red-50 text-red-700 p-5 rounded-lg flex gap-3 my-6 animate-fade-in">
+                  <svg className="w-6 h-6 stroke-current fill-none stroke-2 flex-shrink-0" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <div>
+                    <div className="font-bold text-xs tracking-widest uppercase mb-1">Analysis Failed</div>
+                    <div className="text-xs font-mono">{error}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Report Content */}
+              {report && !loading && (
+                <div className="space-y-8">
+                  
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-6 animate-fade-in">
+                    {/* Issues Found */}
+                    <div className="border border-black p-5 relative bg-white shadow-sm">
+                      <div className="absolute top-0 left-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="absolute bottom-0 left-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="text-black"><CountUpNumber value={report.total_issues} /></div>
+                      <div className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 mt-1">Issues Found</div>
+                    </div>
+                    
+                    {/* Files Changed */}
+                    <div className="border border-black p-5 relative bg-white shadow-sm">
+                      <div className="absolute top-0 left-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="absolute bottom-0 left-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="text-black"><CountUpNumber value={report.files_changed} /></div>
+                      <div className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 mt-1">Files Changed</div>
+                    </div>
+
+                    {/* Chunks Reviewed */}
+                    <div className="border border-black p-5 relative bg-white shadow-sm">
+                      <div className="absolute top-0 left-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="absolute bottom-0 left-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-black"></div>
+                      <div className="text-black"><CountUpNumber value={report.chunk_summaries.length} /></div>
+                      <div className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 mt-1">Chunks Reviewed</div>
+                    </div>
+                  </div>
+
+                  {/* PR Header Info Card */}
+                  <div className="border border-black bg-[#86efac] bg-opacity-20 p-5 mb-6 relative animate-fade-in">
+                    <div className="absolute top-0 left-0 w-2 h-2 bg-black"></div>
+                    <div className="absolute top-0 right-0 w-2 h-2 bg-black"></div>
+                    <div className="absolute bottom-0 left-0 w-2 h-2 bg-black"></div>
+                    <div className="absolute bottom-0 right-0 w-2 h-2 bg-black"></div>
+                    
+                    <div className="font-tactic text-lg md:text-xl font-bold uppercase tracking-tight text-black">{report.pr_title}</div>
+                    <div className="text-xs font-mono text-neutral-700 mt-1 uppercase tracking-wider">Author: {report.author}</div>
+                  </div>
+
+                  {/* Issues Section */}
+                  <div className="space-y-4">
+                    <h3 className="font-tactic text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2 pl-1 select-none">
+                      DETECTED ISSUES ({report.issues.length})
+                    </h3>
+                    
+                    {report.issues.length === 0 ? (
+                      <div className="border border-black p-8 text-center bg-white relative animate-slide-up">
+                        <div className="absolute top-0 left-0 w-2 h-2 bg-black"></div>
+                        <div className="absolute top-0 right-0 w-2 h-2 bg-black"></div>
+                        <div className="absolute bottom-0 left-0 w-2 h-2 bg-black"></div>
+                        <div className="absolute bottom-0 right-0 w-2 h-2 bg-black"></div>
+                        
+                        <div className="text-3xl mb-2">{"\uD83C\uDF89"}</div>
+                        <div className="font-tactic text-base font-bold uppercase text-black">No Issues Detected</div>
+                        <p className="text-xs text-neutral-500 mt-1">This PR looks clean and ready to merge.</p>
+                      </div>
+                    ) : (
+                      report.issues.map((issue, idx) => {
+                        const sev = (issue.severity || 'low').toLowerCase();
+                        
+                        // Badge colors matching constraints:
+                        // HIGH in darker green, MEDIUM in medium green, LOW in light green
+                        let badgeClass = "bg-emerald-100 text-emerald-950 border-emerald-200";
+                        if (sev === 'high') {
+                          badgeClass = "bg-emerald-800 text-white border-emerald-900";
+                        } else if (sev === 'medium') {
+                          badgeClass = "bg-emerald-400 text-black border-emerald-500";
+                        }
+
+                        return (
+                          <div 
+                            key={idx} 
+                            className="border border-black p-5 relative bg-white animate-slide-up hover:translate-x-1 transition-all duration-200 shadow-sm"
+                            style={{ animationDelay: `${idx * 100}ms` }}
+                          >
+                            {/* Corner markers */}
+                            <div className="absolute top-0 left-0 w-1.5 h-1.5 bg-black"></div>
+                            <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-black"></div>
+                            <div className="absolute bottom-0 left-0 w-1.5 h-1.5 bg-black"></div>
+                            <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-black"></div>
+                            
+                            <div className="flex flex-wrap items-center gap-3 mb-3 select-none">
+                              <span className={`text-[10px] font-bold tracking-widest px-2.5 py-1 uppercase rounded-full border animate-pulse-badge ${badgeClass}`}>
+                                {issue.severity || 'LOW'}
+                              </span>
+                              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-neutral-500 bg-neutral-100 border border-neutral-300 px-2.5 py-0.5 rounded">
+                                Line: {issue.line_reference || 'N/A'}
+                              </span>
+                            </div>
+                            
+                            <div className="text-sm text-black font-semibold mb-3 leading-relaxed">
+                              {issue.issue}
+                            </div>
+                            
+                            <div className="bg-neutral-50 border border-neutral-200 p-3 rounded flex gap-2 items-start font-mono text-xs">
+                              <span className="text-[#16a34a] font-bold uppercase tracking-wider text-[10px] mt-0.5 select-none">FIX</span>
+                              <span className="text-neutral-700 leading-relaxed whitespace-pre-wrap">{issue.suggestion}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Chunk Summary Section */}
+                  {report.chunk_summaries && report.chunk_summaries.length > 0 && (
+                    <div className="mt-8 border border-black p-6 bg-white relative animate-fade-in [animation-delay:300ms]">
+                      <div className="absolute top-0 left-0 w-2 h-2 bg-black"></div>
+                      <div className="absolute top-0 right-0 w-2 h-2 bg-black"></div>
+                      <div className="absolute bottom-0 left-0 w-2 h-2 bg-black"></div>
+                      <div className="absolute bottom-0 right-0 w-2 h-2 bg-black"></div>
+                      
+                      <h3 className="font-tactic text-xs font-bold uppercase tracking-widest text-neutral-500 mb-4 select-none">
+                        CHUNK ANALYSIS ANNEX
+                      </h3>
+                      <div className="space-y-3 font-mono text-xs">
+                        {report.chunk_summaries.map((summary, idx) => (
+                          <div key={idx} className="flex flex-col sm:flex-row gap-1 sm:gap-3 pb-3 border-b border-neutral-100 last:border-0 last:pb-0">
+                            <span className="text-neutral-400 font-semibold select-none flex-shrink-0">CHUNK {idx + 1}:</span>
+                            <span className="text-neutral-700 leading-relaxed">{summary}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+            </div>
+
+          </main>
+
+          {/* Footer Section */}
+          <footer className="mt-auto pt-8 pb-4 flex flex-col sm:flex-row items-center justify-between gap-4 w-full animate-fade-in [animation-delay:300ms] border-t border-black border-opacity-10 select-none">
+            <div>
+              <a 
+                href="https://github.com/adithyagrow1/CodeEnforcer" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="bg-black hover:bg-neutral-800 text-white text-[10px] font-bold px-5 py-2.5 rounded-full inline-flex items-center gap-2 tracking-widest uppercase transition-all hover:scale-105 duration-200 shadow-md"
+              >
+                <svg className="w-3.5 h-3.5 fill-white stroke-none" viewBox="0 0 24 24">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <span>GITHUB REPOSITORY</span>
+              </a>
+            </div>
+            <div>
+              <span className="bg-black text-white text-[10px] font-bold px-5 py-2.5 rounded-full inline-block tracking-widest uppercase shadow-md">
+                BUILT BY: M ADITHYA
+              </span>
+            </div>
+          </footer>
+
+        </div>
+      );
     }
 
-    reportArea.innerHTML = html;
-  } catch(e) {
-    loader.style.display = 'none';
-    errorBar.textContent = 'Could not connect: ' + e.message;
-    errorBar.style.display = 'block';
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#1a1025;fill:none;stroke-width:2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Review PR';
-}
-
-document.getElementById('prUrl').addEventListener('keydown', e => { if(e.key==='Enter') runReview(); });
-</script>
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
 </body>
 </html>
