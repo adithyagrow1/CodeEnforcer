@@ -407,7 +407,7 @@ async function runReview() {
   results.scrollIntoView({behavior:'smooth', block:'start'});
 
   try {
-    const res = await fetch('/review', {
+    const res = await fetch('/instances/hf-973-29c959e6/proxy/8002/review', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({url})
